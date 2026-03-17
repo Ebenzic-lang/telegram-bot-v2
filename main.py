@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ===== CONFIG =====
-BOT_TOKEN = "8540733828:AAHqB3b7h0k0cmKIaS6m2zhg5lByv0_5waU"
+BOT_TOKEN = "8540733828:AAGl8jMF8UDckUauFMeq8cRX91SSQMl75kk"
 CHANNEL_USERNAME = "@Chealseanews"
 
 PLAY_LINK = "https://yourtrackinglink.com/play"
@@ -11,6 +11,14 @@ OFFER_LINK = "https://yourtrackinglink.com/offer"
 
 # ===== LOGGING =====
 logging.basicConfig(level=logging.INFO)
+
+# ===== HELPER FUNCTION (ANTI-BYPASS) =====
+async def is_user_joined(context, user_id):
+    try:
+        member = await context.bot.get_chat_member(CHANNEL_USERNAME, user_id)
+        return member.status in ["member", "administrator", "creator"]
+    except:
+        return False
 
 # ===== START =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -31,24 +39,45 @@ async def unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = query.from_user.id
 
-    try:
-        member = await context.bot.get_chat_member(CHANNEL_USERNAME, user_id)
+    joined = await is_user_joined(context, user_id)
 
-        if member.status in ["member", "administrator", "creator"]:
-            keyboard = [
-                [InlineKeyboardButton("🎰 Play Now", url=PLAY_LINK)],
-                [InlineKeyboardButton("🎁 Offer", url=OFFER_LINK)]
-            ]
+    if joined:
+        keyboard = [
+            [InlineKeyboardButton("🎰 Play Now", url=PLAY_LINK)],
+            [InlineKeyboardButton("🎁 Offer", callback_data="offer")]
+        ]
 
-            await query.edit_message_text(
-                "✅ Access unlocked!",
-                reply_markup=InlineKeyboardMarkup(keyboard)
-            )
-        else:
-            await query.answer("❌ Join the channel first!", show_alert=True)
+        await query.edit_message_text(
+            "✅ Access unlocked!",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+    else:
+        await query.answer("❌ Join the channel first!", show_alert=True)
 
-    except Exception as e:
-        await query.message.reply_text("⚠️ Error. Try again.")
+# ===== OFFER (NOW SECURED) =====
+async def offer(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    query = update.callback_query
+    await query.answer()
+
+    user_id = query.from_user.id
+
+    # 🔐 CHECK AGAIN (ANTI-BYPASS)
+    joined = await is_user_joined(context, user_id)
+
+    if not joined:
+        await query.message.reply_text("❌ You must join the channel first.")
+        return
+
+    keyboard = [
+        [InlineKeyboardButton("🎰 Play Now", url=PLAY_LINK)]
+    ]
+
+    await query.message.reply_text(
+        "🎁 *Today's Special Offer*\n\nTap below to start.",
+        parse_mode="Markdown",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 # ===== MAIN =====
 def main():
@@ -56,6 +85,7 @@ def main():
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(unlock, pattern="unlock"))
+    app.add_handler(CallbackQueryHandler(offer, pattern="offer"))
 
     print("Bot running...")
     app.run_polling()
