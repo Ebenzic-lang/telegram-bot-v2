@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ===== CONFIG =====
-BOT_TOKEN = "8540733828:AAEsuvfPTx447rhcMvBn8r_-ppGA4X4snoY"
+BOT_TOKEN = "8540733828:AAFByY8rg8p1kCL95msly_5XoGi40zqlN5g"
 CHANNEL_USERNAME = "@Chealseanews"
 
 PLAY_LINK = "https://yourtrackinglink.com/play"
