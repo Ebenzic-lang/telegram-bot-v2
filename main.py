@@ -3,7 +3,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # ===== CONFIG =====
-BOT_TOKEN = "8540733828:AAGl8jMF8UDckUauFMeq8cRX91SSQMl75kk"
+BOT_TOKEN = "8540733828:AAEsuvfPTx447rhcMvBn8r_-ppGA4X4snoY"
 CHANNEL_USERNAME = "@Chealseanews"
 
 PLAY_LINK = "https://yourtrackinglink.com/play"
@@ -19,6 +19,20 @@ async def is_user_joined(context, user_id):
         return member.status in ["member", "administrator", "creator"]
     except:
         return False
+
+# ===== AUTO POST TO CHANNEL =====
+async def send_to_channel(context):
+    text = "🔥 New Drop Alert!\n\nDon't miss today's winning opportunity."
+
+    keyboard = [
+        [InlineKeyboardButton("🎰 Play Now", url=PLAY_LINK)]
+    ]
+
+    await context.bot.send_message(
+        chat_id=CHANNEL_USERNAME,
+        text=text,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 
 # ===== START =====
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -54,7 +68,7 @@ async def unlock(update: Update, context: ContextTypes.DEFAULT_TYPE):
     else:
         await query.answer("❌ Join the channel first!", show_alert=True)
 
-# ===== OFFER (NOW SECURED) =====
+# ===== OFFER (SECURED) =====
 async def offer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     query = update.callback_query
@@ -62,7 +76,6 @@ async def offer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = query.from_user.id
 
-    # 🔐 CHECK AGAIN (ANTI-BYPASS)
     joined = await is_user_joined(context, user_id)
 
     if not joined:
@@ -83,9 +96,16 @@ async def offer(update: Update, context: ContextTypes.DEFAULT_TYPE):
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
+    # Handlers
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(unlock, pattern="unlock"))
     app.add_handler(CallbackQueryHandler(offer, pattern="offer"))
+
+    # ===== SCHEDULER =====
+    job_queue = app.job_queue
+
+    # Post to channel every 1 hour
+    job_queue.run_repeating(send_to_channel, interval=3600, first=10)
 
     print("Bot running...")
     app.run_polling()
